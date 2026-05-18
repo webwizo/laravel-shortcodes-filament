@@ -234,7 +234,44 @@ ShortcodesFilamentPlugin::make()
 ],
 ```
 
+### Tenant model — required `hasMany` relationship
+
+Filament's tenancy system requires your tenant model to declare a `hasMany` relationship back to the shortcodes table. Add this to your tenant model:
+
+```php
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Webwizo\ShortcodesFilament\Models\Shortcode;
+
+public function shortcodes(): HasMany
+{
+    return $this->hasMany(Shortcode::class, 'team_id');
+}
+```
+
+> Replace `team_id` with whatever foreign key you configured. Without this relationship Filament will throw a "does not have a relationship" error when loading the panel.
+
 ### Full multi-tenant example
+
+**1. Tenant model** (`app/Models/Team.php`):
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Webwizo\ShortcodesFilament\Models\Shortcode;
+
+class Team extends Model
+{
+    // Required: Filament uses this to scope shortcodes to the current tenant
+    public function shortcodes(): HasMany
+    {
+        return $this->hasMany(Shortcode::class, 'team_id');
+    }
+}
+```
+
+**2. Panel provider** (`app/Providers/Filament/AdminPanelProvider.php`):
 
 ```php
 use App\Models\Team;
