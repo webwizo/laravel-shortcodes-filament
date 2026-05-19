@@ -3,8 +3,10 @@
 namespace Webwizo\ShortcodesFilament;
 
 use Illuminate\Support\ServiceProvider;
+use Webwizo\ShortcodesFilament\Console\Commands\AddTenantColumnCommand;
 use Webwizo\ShortcodesFilament\Models\Shortcode;
 use Webwizo\ShortcodesFilament\Shortcodes\DynamicShortcode;
+use Webwizo\Shortcodes\Facades\Shortcode as ShortcodeFacade;
 
 class ShortcodesFilamentServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,12 @@ class ShortcodesFilamentServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                AddTenantColumnCommand::class,
+            ]);
+        }
 
         $this->publishes([
             __DIR__ . '/../config/shortcodes-filament.php' => config_path('shortcodes-filament.php'),
@@ -44,13 +52,15 @@ class ShortcodesFilamentServiceProvider extends ServiceProvider
             $model::where('is_active', true)
                 ->get()
                 ->each(function ($shortcode) {
-                    \Shortcode::register(
+                    ShortcodeFacade::register(
                         $shortcode->tag,
                         new DynamicShortcode($shortcode)
                     );
                 });
         } catch (\Throwable $e) {
-            //
+            logger()->error('[ShortcodesFilament] Failed to register dynamic shortcodes: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
         }
     }
 }

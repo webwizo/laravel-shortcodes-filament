@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] — 2026-05-19
+
+### Added
+
+- **Shortcode type** — shortcodes now have a `type` field (`static` or `dynamic`). Static shortcodes show only the attribute builder and template editor. Dynamic shortcodes reveal the Database Data Source section. Existing records default to `static`.
+- **`type` column migration** — `type` enum column added to the `shortcodes` table (fresh installs pick it up automatically from the published migration).
+- **Type badge in table** — the list view now shows a `Static` / `Dynamic` badge per shortcode with a type filter.
+- **Annotated Facade** — `Webwizo\ShortcodesFilament\Facades\Shortcode` with full `@method` docblocks for `compile()`, `strip()`, `register()`, `enable()`, and `disable()` for IDE autocompletion.
+
+### Fixed
+
+- **`{{attr}}` rendering empty attributes** — attributes with no value passed and no default are now excluded from `{{attr}}` output, preventing `id=""` appearing in HTML.
+- **Dynamic data source lookup** — `resolveDataSource()` was calling `$shortcode->get($attr)` which returns a formatted HTML attribute string (e.g. `id="5"`) instead of the raw value. Changed to `$shortcode->{$attr}` so the correct value is used for the DB query.
+- **Missing lookup attribute** — if the lookup attribute is not provided in the shortcode tag (e.g. `[store]` with no `id`), the shortcode now returns an empty string instead of rendering a broken template with raw `{{db.*}}` placeholders.
+- **Invalid lookup value** — if the DB query returns no row (invalid or non-existent ID), the shortcode returns an empty string instead of an empty wrapper element.
+- **Soft-deleted records** — dynamic data source queries now automatically exclude soft-deleted rows by adding `whereNull('deleted_at')` when the target table has that column.
+- **Usage example for dynamic shortcodes** — the auto-generated usage example now prepends the lookup attribute (e.g. `id=""`) for dynamic shortcodes so editors know the required attribute.
+
+---
+
 ## [1.0.0] — 2026-05-19
 
 ### Added
@@ -26,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Publishable config** — `vendor:publish --tag=shortcodes-filament-config`
 - **Publishable migration** — `vendor:publish --tag=shortcodes-filament-migrations`
 - **Model swapping** — replace the built-in `Shortcode` model with your own via `config('shortcodes-filament.model')`
+- **Conditional FK column** — foreign key column and tenant-scoped unique index are only added to the migration when `tenant.model` is configured; non-tenant installs get a clean table with no unused columns
+- **`php artisan shortcodes:add-tenant` command** — generates a migration to add the tenant FK column to an existing table when upgrading a non-tenant install to multi-tenancy; guards against missing config and already-existing columns
 - Support for PHP ^8.2, Laravel ^11.0 | ^12.0, Filament ^3.0
 
+[1.0.1]: https://github.com/webwizo/laravel-shortcodes-filament/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/webwizo/laravel-shortcodes-filament/releases/tag/v1.0.0

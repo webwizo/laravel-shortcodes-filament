@@ -105,6 +105,21 @@ class ShortcodeResource extends Resource
                         ->rows(2)
                         ->columnSpanFull(),
 
+                    Forms\Components\Radio::make('type')
+                        ->label('Type')
+                        ->options([
+                            'static'  => 'Static',
+                            'dynamic' => 'Dynamic',
+                        ])
+                        ->descriptions([
+                            'static'  => 'Template with attributes only. No database lookup.',
+                            'dynamic' => 'Pulls live data from a DB table via a shortcode attribute.',
+                        ])
+                        ->default('static')
+                        ->required()
+                        ->live()
+                        ->columnSpanFull(),
+
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
                         ->default(true)
@@ -139,7 +154,7 @@ class ShortcodeResource extends Resource
             Forms\Components\Section::make('Dynamic Data Source')
                 ->description('Pull live data from any DB table. Use {{db.column_name}} in your template.')
                 ->icon('heroicon-o-circle-stack')
-                ->visible($hasDynamicSources)
+                ->visible(fn (Get $get): bool => $hasDynamicSources && $get('type') === 'dynamic')
                 ->schema([
                     Forms\Components\Select::make('data_source_table')
                         ->label('Database Table')
@@ -226,12 +241,15 @@ class ShortcodeResource extends Resource
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('data_source_table')
-                    ->label('Data Source')
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Type')
                     ->badge()
-                    ->color('warning')
-                    ->placeholder('Static')
-                    ->toggleable(),
+                    ->color(fn (string $state): string => match ($state) {
+                        'dynamic' => 'warning',
+                        default   => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => ucfirst($state))
+                    ->sortable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active'),
@@ -247,6 +265,13 @@ class ShortcodeResource extends Resource
                     ->placeholder('All')
                     ->trueLabel('Active only')
                     ->falseLabel('Inactive only'),
+
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Type')
+                    ->options([
+                        'static'  => 'Static',
+                        'dynamic' => 'Dynamic',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

@@ -13,10 +13,12 @@ Shortcodes are small tags like `[store id="5"]` that your content editors embed 
 ## Features
 
 - **Full CRUD UI** — list, create, edit, and delete shortcodes from the Filament panel
+- **Shortcode types** — choose between **Static** (attributes + template only) and **Dynamic** (adds a live DB data source)
 - **Attribute builder** — define named attributes with defaults via a repeater UI
 - **HTML template editor** — write the output HTML with `{{attr}}`, `{{content}}`, and `{{db.column}}` placeholders
-- **Dynamic data sources** — pull a live database row into any shortcode template at render time
+- **Dynamic data sources** — pull a live database row into any shortcode template at render time, with soft-delete awareness
 - **Usage example** — auto-generated, copyable shortcode string shown in the table and edit form
+- **Annotated Facade** — full IDE autocompletion for `compile()`, `strip()`, and more via `Webwizo\ShortcodesFilament\Facades\Shortcode`
 - **Multi-tenancy** — first-class Filament multi-tenant support with auto-detection of `int`, `UUID`, and `ULID` primary keys
 - **Zero boilerplate** — shortcodes register themselves automatically on boot; no manual `Shortcode::register()` calls needed
 
@@ -83,6 +85,15 @@ To render shortcodes in a Blade view, use the `webwizo/laravel-shortcodes` parse
 {!! Shortcode::compile($post->content) !!}
 ```
 
+For full IDE autocompletion (`compile`, `strip`, `register`, etc.), import the facade provided by this package instead of the vendor one:
+
+```php
+use Webwizo\ShortcodesFilament\Facades\Shortcode;
+
+// compile() now autocompletes in PhpStorm, VS Code + Intelephense, etc.
+return Shortcode::compile($post->content);
+```
+
 ---
 
 ### Creating a shortcode in the panel
@@ -92,7 +103,9 @@ To render shortcodes in a Blade view, use the `webwizo/laravel-shortcodes` parse
 3. Fill in:
    - **Tag** — the shortcode name used in content, e.g. `store` (lowercase, hyphens allowed)
    - **Label** — human-readable name shown in the panel
+   - **Type** — `Static` for pure HTML/attribute templates, `Dynamic` to attach a live DB data source
    - **Attributes** — named parameters editors can pass, each with an optional default value
+   - **Dynamic Data Source** *(Dynamic type only)* — pick the table, lookup column, and which shortcode attribute holds the lookup value
    - **Template** — the HTML output, using placeholders described below
 4. Save — the shortcode is immediately live
 
@@ -124,17 +137,42 @@ Used in content as:
 
 ---
 
+### Shortcode types
+
+Every shortcode has a **Type**:
+
+- **Static** — renders the HTML template with attribute and content substitution only. The Dynamic Data Source section is hidden.
+- **Dynamic** — additionally pulls a live row from a database table at render time, making `{{db.column_name}}` placeholders available in the template.
+
 ### Dynamic data sources
 
-Enable **Dynamic Data Sources** on the plugin (on by default) to pull live data from any database table into a shortcode template.
-
-In the **Dynamic Data Source** section of the edit form:
+Set the shortcode type to **Dynamic** and fill in the **Dynamic Data Source** section:
 
 - **Database Table** — the table to query
 - **Lookup Column** — the column used to find the row (e.g. `id`)
 - **Shortcode Attribute** — which shortcode attribute holds the lookup value (e.g. `id`)
 
 Then reference any column from that row in your template with `{{db.column_name}}`.
+
+```html
+<div class="store-card {{class}}">
+    <strong>{{db.name}}</strong>
+    <span>{{db.slug}}</span>
+    {{content}}
+</div>
+```
+
+Used in content as:
+
+```
+[store id="01kre0dee551yx52r6jwdambg6" class="featured"]Check it out[/store]
+```
+
+**Validation behaviour:**
+- If the lookup attribute is missing from the tag (e.g. `[store]`), the shortcode renders nothing.
+- If the lookup value does not match any row, the shortcode renders nothing.
+- Soft-deleted rows (`deleted_at IS NOT NULL`) are automatically excluded.
+- Any `{{db.*}}` placeholders with no matching column are silently removed.
 
 Results are cached for 600 seconds by default (configurable via `cache_ttl`).
 
@@ -191,6 +229,42 @@ ShortcodesFilamentPlugin::make()
     ->navigationSort(5)
     ->usingDynamicDataSources(true)
 ```
+
+---
+
+## Without multi-tenancy
+
+If your app does not use Filament's multi-tenant system, simply leave `tenant.model` as `null` in the config (the default). The migration will create a clean `shortcodes` table with no foreign key column, and tags will be unique globally.
+
+```php
+'tenant' => [
+    'model' => null, // no tenant column created in the migration
+],
+```
+
+---
+
+## Adding multi-tenancy later
+
+If you installed the package without multi-tenancy and want to add it later, the original migration has already run so you cannot re-run it. Instead, update your config with the tenant model, foreign key, and relationship, then run the built-in command:
+
+```bash
+php artisan shortcodes:add-tenant
+```
+
+The command will:
+- Read your `tenant.model`, `tenant.foreign_key`, and `tenant.key_type` from config
+- Auto-detect the correct column type from your tenant model's traits if `key_type` is not set
+- Check the column does not already exist
+- Generate a new migration file in your `database/migrations` folder
+
+Then apply it:
+
+```bash
+php artisan migrate
+```
+
+The generated migration adds the FK column, drops the global `UNIQUE(tag)` index, and replaces it with a tenant-scoped `UNIQUE(tenant_fk, tag)` so the same tag can exist independently per tenant.
 
 ---
 

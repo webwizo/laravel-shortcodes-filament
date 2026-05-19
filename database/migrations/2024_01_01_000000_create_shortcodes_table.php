@@ -42,28 +42,41 @@ return new class extends Migration
         Schema::create($this->tableName(), function (Blueprint $table) {
             $table->id();
 
-            $tenantForeignKey = config('shortcodes-filament.tenant.foreign_key', 'vendor_id');
-            $keyType          = $this->resolveTenantKeyType();
+            $tenantModel      = config('shortcodes-filament.tenant.model');
+            $tenantForeignKey = config('shortcodes-filament.tenant.foreign_key') ?: 'vendor_id';
 
-            match ($keyType) {
-                'ulid'   => $table->char($tenantForeignKey, 26)->nullable()->index(),
-                'uuid'   => $table->uuid($tenantForeignKey)->nullable()->index(),
-                'string' => $table->string($tenantForeignKey)->nullable()->index(),
-                default  => $table->unsignedBigInteger($tenantForeignKey)->nullable()->index(),
-            };
+            // Only create the foreign key column when a tenant model is configured.
+            // Users without multi-tenancy get a clean table with no unused columns.
+            if ($tenantModel) {
+                $keyType = $this->resolveTenantKeyType();
+
+                match ($keyType) {
+                    'ulid'   => $table->char($tenantForeignKey, 26)->nullable()->index(),
+                    'uuid'   => $table->uuid($tenantForeignKey)->nullable()->index(),
+                    'string' => $table->string($tenantForeignKey)->nullable()->index(),
+                    default  => $table->unsignedBigInteger($tenantForeignKey)->nullable()->index(),
+                };
+            }
 
             $table->string('tag');
             $table->string('label');
             $table->text('description')->nullable();
             $table->longText('template');
             $table->json('attributes')->nullable();
+            $table->enum('type', ['static', 'dynamic'])->default('static');
             $table->string('data_source_table')->nullable();
             $table->string('data_source_key')->nullable();
             $table->string('data_source_attr')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique([$tenantForeignKey, 'tag']);
+            // Unique constraint scoped to tenant when multi-tenancy is enabled,
+            // otherwise just unique by tag globally.
+            if ($tenantModel) {
+                $table->unique([$tenantForeignKey, 'tag']);
+            } else {
+                $table->unique('tag');
+            }
         });
     }
 
