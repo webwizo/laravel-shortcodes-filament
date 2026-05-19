@@ -4,6 +4,8 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/webwizo/laravel-shortcodes-filament.svg?style=flat-square)](https://packagist.org/packages/webwizo/laravel-shortcodes-filament)
 [![License](https://img.shields.io/packagist/l/webwizo/laravel-shortcodes-filament.svg?style=flat-square)](https://packagist.org/packages/webwizo/laravel-shortcodes-filament)
 
+![Laravel Shortcodes Filament](assets/art/laravel-shortcodes-filament.jpeg)
+
 A [Filament v3](https://filamentphp.com) plugin that gives you a full admin UI for managing [webwizo/laravel-shortcodes](https://github.com/webwizo/laravel-shortcodes) — create, edit, and delete shortcodes from the browser without touching code.
 
 Shortcodes are small tags like `[store id="5"]` that your content editors embed in any text field. This plugin stores them in the database and renders them dynamically at runtime, with optional live data pulled from any database table.
