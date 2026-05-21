@@ -80,133 +80,134 @@ class ShortcodeResource extends Resource
     {
         $hasDynamicSources = static::getPlugin()->hasDynamicDataSources();
 
-        return $form->schema([
+        return $form
+            ->columns(1)
+            ->schema([
+                Forms\Components\Section::make('Identity')
+                    ->columns(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('tag')
+                            ->label('Tag Name')
+                            ->required()
+                            ->unique(
+                                table: config('shortcodes-filament.model'),
+                                ignoreRecord: true
+                            )
+                            ->regex('/^[a-z][a-z0-9\-]*$/')
+                            ->helperText('Lowercase letters, numbers, hyphens only. e.g. store, blog-post')
+                            ->maxLength(64),
 
-            Forms\Components\Section::make('Identity')
-                ->columns(2)
-                ->schema([
-                    Forms\Components\TextInput::make('tag')
-                        ->label('Tag Name')
-                        ->required()
-                        ->unique(
-                            table: config('shortcodes-filament.model'),
-                            ignoreRecord: true
-                        )
-                        ->regex('/^[a-z][a-z0-9\-]*$/')
-                        ->helperText('Lowercase letters, numbers, hyphens only. e.g. store, blog-post')
-                        ->maxLength(64),
+                        Forms\Components\TextInput::make('label')
+                            ->label('Display Label')
+                            ->required()
+                            ->maxLength(128),
 
-                    Forms\Components\TextInput::make('label')
-                        ->label('Display Label')
-                        ->required()
-                        ->maxLength(128),
+                        Forms\Components\Textarea::make('description')
+                            ->rows(2)
+                            ->columnSpanFull(),
 
-                    Forms\Components\Textarea::make('description')
-                        ->rows(2)
-                        ->columnSpanFull(),
+                        Forms\Components\Radio::make('type')
+                            ->label('Type')
+                            ->options([
+                                'static' => 'Static',
+                                'dynamic' => 'Dynamic',
+                            ])
+                            ->descriptions([
+                                'static' => 'Template with attributes only. No database lookup.',
+                                'dynamic' => 'Pulls live data from a DB table via a shortcode attribute.',
+                            ])
+                            ->default('static')
+                            ->required()
+                            ->live()
+                            ->columnSpanFull(),
 
-                    Forms\Components\Radio::make('type')
-                        ->label('Type')
-                        ->options([
-                            'static'  => 'Static',
-                            'dynamic' => 'Dynamic',
-                        ])
-                        ->descriptions([
-                            'static'  => 'Template with attributes only. No database lookup.',
-                            'dynamic' => 'Pulls live data from a DB table via a shortcode attribute.',
-                        ])
-                        ->default('static')
-                        ->required()
-                        ->live()
-                        ->columnSpanFull(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true)
+                            ->columnSpanFull(),
+                    ]),
 
-                    Forms\Components\Toggle::make('is_active')
-                        ->label('Active')
-                        ->default(true)
-                        ->columnSpanFull(),
-                ]),
+                Forms\Components\Section::make('Shortcode Attributes')
+                    ->description('Attributes users can pass inside the shortcode tag.')
+                    ->schema([
+                        Forms\Components\Repeater::make('attributes')
+                            ->label('')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Name')
+                                    ->required()
+                                    ->placeholder('class'),
 
-            Forms\Components\Section::make('Shortcode Attributes')
-                ->description('Attributes users can pass inside the shortcode tag.')
-                ->schema([
-                    Forms\Components\Repeater::make('attributes')
-                        ->label('')
-                        ->schema([
-                            Forms\Components\TextInput::make('name')
-                                ->label('Name')
-                                ->required()
-                                ->placeholder('class'),
+                                Forms\Components\TextInput::make('default')
+                                    ->label('Default Value')
+                                    ->placeholder('btn-primary'),
 
-                            Forms\Components\TextInput::make('default')
-                                ->label('Default Value')
-                                ->placeholder('btn-primary'),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Description')
+                                    ->placeholder('Optional CSS classes'),
+                            ])
+                            ->columns(3)
+                            ->addActionLabel('Add Attribute')
+                            ->collapsible()
+                            ->itemLabel(fn(array $state): string => $state['name'] ?? 'New Attribute'),
+                    ]),
 
-                            Forms\Components\TextInput::make('description')
-                                ->label('Description')
-                                ->placeholder('Optional CSS classes'),
-                        ])
-                        ->columns(3)
-                        ->addActionLabel('Add Attribute')
-                        ->collapsible()
-                        ->itemLabel(fn (array $state): string => $state['name'] ?? 'New Attribute'),
-                ]),
+                Forms\Components\Section::make('Dynamic Data Source')
+                    ->description('Pull live data from any DB table. Use {{db.column_name}} in your template.')
+                    ->icon('heroicon-o-circle-stack')
+                    ->visible(fn(Get $get): bool => $hasDynamicSources && $get('type') === 'dynamic')
+                    ->schema([
+                        Forms\Components\Select::make('data_source_table')
+                            ->label('Database Table')
+                            ->options(fn() => static::getTableOptions())
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set): void {
+                                $set('data_source_key', null);
+                                $set('data_source_attr', null);
+                            })
+                            ->placeholder('None — static shortcode only'),
 
-            Forms\Components\Section::make('Dynamic Data Source')
-                ->description('Pull live data from any DB table. Use {{db.column_name}} in your template.')
-                ->icon('heroicon-o-circle-stack')
-                ->visible(fn (Get $get): bool => $hasDynamicSources && $get('type') === 'dynamic')
-                ->schema([
-                    Forms\Components\Select::make('data_source_table')
-                        ->label('Database Table')
-                        ->options(fn () => static::getTableOptions())
-                        ->searchable()
-                        ->live()
-                        ->afterStateUpdated(function (Forms\Set $set): void {
-                            $set('data_source_key', null);
-                            $set('data_source_attr', null);
-                        })
-                        ->placeholder('None — static shortcode only'),
+                        Forms\Components\Select::make('data_source_key')
+                            ->label('Lookup Column (in DB)')
+                            ->helperText('Column used to find the row. Usually "id".')
+                            ->options(fn(Get $get) => static::getColumnOptions($get('data_source_table')))
+                            ->searchable()
+                            ->live()
+                            ->visible(fn(Get $get): bool => filled($get('data_source_table'))),
 
-                    Forms\Components\Select::make('data_source_key')
-                        ->label('Lookup Column (in DB)')
-                        ->helperText('Column used to find the row. Usually "id".')
-                        ->options(fn (Get $get) => static::getColumnOptions($get('data_source_table')))
-                        ->searchable()
-                        ->live()
-                        ->visible(fn (Get $get): bool => filled($get('data_source_table'))),
+                        Forms\Components\TextInput::make('data_source_attr')
+                            ->label('Shortcode Attribute Name')
+                            ->helperText('Which shortcode attribute holds the lookup value. e.g. "id" → [store id="5"]')
+                            ->placeholder('id')
+                            ->visible(fn(Get $get): bool => filled($get('data_source_table'))),
 
-                    Forms\Components\TextInput::make('data_source_attr')
-                        ->label('Shortcode Attribute Name')
-                        ->helperText('Which shortcode attribute holds the lookup value. e.g. "id" → [store id="5"]')
-                        ->placeholder('id')
-                        ->visible(fn (Get $get): bool => filled($get('data_source_table'))),
+                        Forms\Components\Placeholder::make('available_columns')
+                            ->label('Available {{db.*}} Placeholders')
+                            ->content(fn(Get $get): string => static::getColumnPlaceholders($get('data_source_table')))
+                            ->visible(fn(Get $get): bool => filled($get('data_source_table'))),
+                    ]),
 
-                    Forms\Components\Placeholder::make('available_columns')
-                        ->label('Available {{db.*}} Placeholders')
-                        ->content(fn (Get $get): string => static::getColumnPlaceholders($get('data_source_table')))
-                        ->visible(fn (Get $get): bool => filled($get('data_source_table'))),
-                ]),
+                Forms\Components\Section::make('HTML Template')
+                    ->description('{{content}} = inner content · {{attr}} = shortcode attribute · {{db.col}} = database value')
+                    ->schema([
+                        Forms\Components\Textarea::make('template')
+                            ->label('')
+                            ->required()
+                            ->rows(12)
+                            ->columnSpanFull()
+                            ->placeholder(
+                                "<div class=\"store {{class}}\">\n" .
+                                "    <strong>{{db.name}}</strong>\n" .
+                                "    {{content}}\n" .
+                                "</div>"
+                            ),
 
-            Forms\Components\Section::make('HTML Template')
-                ->description('{{content}} = inner content · {{attr}} = shortcode attribute · {{db.col}} = database value')
-                ->schema([
-                    Forms\Components\Textarea::make('template')
-                        ->label('')
-                        ->required()
-                        ->rows(12)
-                        ->columnSpanFull()
-                        ->placeholder(
-                            "<div class=\"store {{class}}\">\n" .
-                            "    <strong>{{db.name}}</strong>\n" .
-                            "    {{content}}\n" .
-                            "</div>"
-                        ),
-
-                    Forms\Components\Placeholder::make('usage_example')
-                        ->label('Usage Example')
-                        ->content(fn ($record) => $record?->usage_example ?? 'Save to see usage example.'),
-                ]),
-        ]);
+                        Forms\Components\Placeholder::make('usage_example')
+                            ->label('Usage Example')
+                            ->content(fn($record) => $record?->usage_example ?? 'Save to see usage example.'),
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -234,7 +235,7 @@ class ShortcodeResource extends Resource
                     ->copyMessage('Shortcode copied!')
                     ->copyMessageDuration(1500)
                     ->limit(60)
-                    ->tooltip(fn ($record) => $record?->usage_example),
+                    ->tooltip(fn($record) => $record?->usage_example),
 
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
@@ -244,11 +245,11 @@ class ShortcodeResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'dynamic' => 'warning',
-                        default   => 'gray',
+                        default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => ucfirst($state))
+                    ->formatStateUsing(fn(string $state): string => ucfirst($state))
                     ->sortable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
@@ -269,7 +270,7 @@ class ShortcodeResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Type')
                     ->options([
-                        'static'  => 'Static',
+                        'static' => 'Static',
                         'dynamic' => 'Dynamic',
                     ]),
             ])
@@ -287,9 +288,9 @@ class ShortcodeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListShortcodes::route('/'),
+            'index' => Pages\ListShortcodes::route('/'),
             'create' => Pages\CreateShortcode::route('/create'),
-            'edit'   => Pages\EditShortcode::route('/{record}/edit'),
+            'edit' => Pages\EditShortcode::route('/{record}/edit'),
         ];
     }
 
@@ -299,8 +300,8 @@ class ShortcodeResource extends Resource
 
         return collect(Schema::getTables())
             ->pluck('name')
-            ->reject(fn ($t) => in_array($t, $excluded))
-            ->mapWithKeys(fn ($t) => [
+            ->reject(fn($t) => in_array($t, $excluded))
+            ->mapWithKeys(fn($t) => [
                 $t => str($t)->replace('_', ' ')->title()->toString(),
             ])
             ->toArray();
@@ -308,23 +309,23 @@ class ShortcodeResource extends Resource
 
     protected static function getColumnOptions(?string $table): array
     {
-        if (! $table) {
+        if (!$table) {
             return [];
         }
 
         return collect(Schema::getColumnListing($table))
-            ->mapWithKeys(fn ($c) => [$c => $c])
+            ->mapWithKeys(fn($c) => [$c => $c])
             ->toArray();
     }
 
     protected static function getColumnPlaceholders(?string $table): string
     {
-        if (! $table) {
+        if (!$table) {
             return '—';
         }
 
         return collect(Schema::getColumnListing($table))
-            ->map(fn ($c) => '{{db.' . $c . '}}')
+            ->map(fn($c) => '{{db.' . $c . '}}')
             ->join('   ');
     }
 }
