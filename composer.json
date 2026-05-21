@@ -1,7 +1,13 @@
 {
     "name": "webwizo/laravel-shortcodes-filament",
     "description": "Filament 3 plugin for managing Laravel Shortcodes via admin panel",
-    "keywords": ["laravel", "filament", "shortcodes", "plugin", "cms"],
+    "keywords": [
+        "laravel",
+        "filament",
+        "shortcodes",
+        "plugin",
+        "cms"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -17,6 +23,9 @@
         "filament/filament": "^3.0 || ^4.0 || ^5.0",
         "illuminate/support": "^11.0|^12.0",
         "illuminate/database": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0 || ^9.0"
     },
     "autoload": {
         "psr-4": {
