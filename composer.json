@@ -31,7 +31,10 @@
     "autoload": {
         "psr-4": {
             "Webwizo\\ShortcodesFilament\\": "src/"
-        }
+        },
+        "files": [
+            "src/compat.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

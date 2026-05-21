@@ -81,7 +81,7 @@ public function getTable(): string
         if ($this->isDynamic() && $this->data_source_table) {
             // If the lookup attribute wasn't provided in the tag, bail early
             // rather than rendering a broken template with raw {{db.*}} placeholders.
-            $lookupValue = $shortcode->{$this->data_source_attr};
+            $lookupValue = $shortcode->{$this->data_source_attr} ?? null;
             if (! filled($lookupValue)) {
                 return '';
             }
