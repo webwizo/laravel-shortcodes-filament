@@ -1,4 +1,10 @@
-/vendor/
-.phpunit.result.cache
+/vendor
+/node_modules
+/.idea
+/.vscode
+/.phpunit.cache
+/.php-cs-fixer.cache
+/.DS_Store
+coverage/
 composer.lock
 .DS_Store

@@ -26,11 +26,16 @@
     },
     "require-dev": {
         "orchestra/testbench": "^9.0",
-        "pestphp/pest": "^3.0"
+        "pestphp/pest": "^3.8"
     },
     "autoload": {
         "psr-4": {
             "Webwizo\\ShortcodesFilament\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Webwizo\\LaravelShortcodesFilament\\Tests\\": "tests/"
         }
     },
     "extra": {
