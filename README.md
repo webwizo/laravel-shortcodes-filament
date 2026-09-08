@@ -406,6 +406,42 @@ Pull requests are welcome. For major changes please open an issue first to discu
 
 ---
 
+## ❤️ Support Open Source
+
+This plugin is open source and built on top of [`webwizo/laravel-shortcodes`](https://github.com/webwizo/laravel-shortcodes).
+
+If this plugin saves you development time or makes managing shortcodes easier for your team, consider supporting its continued development.
+
+Your support helps me:
+
+* 🛠️ Maintain and improve the plugin
+* 🐛 Fix bugs and edge cases
+* 🚀 Add new Filament and Laravel features
+* 📚 Improve documentation and examples
+* 🔧 Keep the package compatible with newer versions
+* 💡 Build more useful open-source tools for Laravel developers
+
+### ☕ Buy me a coffee
+
+**[☕ Support the project →](https://buymeacoffee.com/webwizo)**
+
+Even a small contribution helps me spend more time maintaining and improving open-source packages.
+
+### ⭐ Other ways to help
+
+You can also support the project without spending anything:
+
+* ⭐ Star the repository
+* 🐛 Report bugs
+* 💡 Suggest features
+* 🔧 Submit pull requests
+* 📖 Improve documentation
+* 📣 Share it with other Laravel / Filament developers
+
+Thank you for using the plugin and supporting open source. ❤️
+
+---
+
 ## License
 
 The MIT License (MIT). Please see [LICENSE](LICENSE) for more information.
