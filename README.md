@@ -6,9 +6,24 @@
 
 ![Laravel Shortcodes Filament](assets/art/laravel-shortcodes-filament.jpeg)
 
-A [Filament v3](https://filamentphp.com) plugin that gives you a full admin UI for managing [webwizo/laravel-shortcodes](https://github.com/webwizo/laravel-shortcodes) — create, edit, and delete shortcodes from the browser without touching code.
+**Manage Laravel Shortcodes directly from your Filament admin panel.**
 
-Shortcodes are small tags like `[store id="5"]` that your content editors embed in any text field. This plugin stores them in the database and renders them dynamically at runtime, with optional live data pulled from any database table.
+A Filament v3 plugin for [`webwizo/laravel-shortcodes`](https://github.com/webwizo/laravel-shortcodes) that lets content editors create, manage, and use shortcodes without touching PHP code.
+
+Create reusable static or dynamic shortcodes, define attributes, build HTML templates, connect shortcodes to live database records, and scope everything to your Filament tenants.
+
+### ✨ What you get
+
+* 🧩 **Shortcode Management** — Create, edit, and delete shortcodes from Filament
+* 🎨 **Template Builder** — Define HTML output using simple placeholders
+* ⚡ **Dynamic Data Sources** — Pull live records from your database
+* 🏷️ **Custom Attributes** — Define reusable shortcode attributes with defaults
+* 🏢 **Multi-Tenancy** — Scope shortcodes to individual Filament tenants
+* 💻 **IDE Autocomplete** — Annotated facade for PhpStorm, VS Code & Intelephense
+* 🔌 **Zero Boilerplate** — Automatic shortcode registration
+
+> Built on top of the battle-tested [`webwizo/laravel-shortcodes`](https://github.com/webwizo/laravel-shortcodes) package.
+
 
 ---
 
